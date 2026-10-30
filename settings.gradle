@@ -21,6 +21,6 @@ dependencyResolutionManagement {
 
 includeMedia3.execute(file('media'))
 
-rootProject.name = "Auxio"
+rootProject.name = "Jans"
 include ':app'
 include ':musikr'

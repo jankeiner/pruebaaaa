@@ -7,7 +7,7 @@
     </style>
 
     <!-- Use dynamic colors since that's assumed to be the setting used. -->
-    <style name="Theme.Auxio.App" parent="Theme.Auxio.Base" />
+    <style name="Theme.Auxio.App" parent="@style/Theme.Auxio.DeepPurple.Black" />
 
     <style name="Theme.Auxio.Widget" parent="@android:style/Theme.DeviceDefault.DayNight">
         <item name="colorPrimary">?android:attr/colorAccent</item>
