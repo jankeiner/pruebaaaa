@@ -50,7 +50,7 @@ jobs:
         run: |
           sdkmanager --install \
             "platform-tools" \
-            "platforms;android-37" \
+            "platforms;android-37.0" \
             "ndk;28.2.13676358" \
             "cmake;3.22.1"
 
@@ -58,6 +58,12 @@ jobs:
         run: |
           test -f media/build-logic-settings/settings.gradle.kts || test -f media/build-logic-settings/build.gradle.kts
           test -f musikr/src/main/cpp/taglib/CMakeLists.txt
+
+      - name: Fix Android 37 SDK directory name for Gradle
+        run: |
+          if [ -d "$ANDROID_HOME/platforms/android-37.0" ] && [ ! -e "$ANDROID_HOME/platforms/android-37" ]; then
+            ln -s android-37.0 "$ANDROID_HOME/platforms/android-37"
+          fi
 
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
