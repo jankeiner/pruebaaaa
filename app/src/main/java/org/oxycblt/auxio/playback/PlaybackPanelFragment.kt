@@ -58,8 +58,8 @@ import org.oxycblt.auxio.list.ListViewModel
 import org.oxycblt.auxio.music.resolve
 import org.oxycblt.auxio.music.resolveNames
 import org.oxycblt.auxio.playback.lyrics.LrcParser
-import org.oxycblt.auxio.playback.lyrics.LyricsStore
 import org.oxycblt.auxio.playback.lyrics.LyricLine
+import org.oxycblt.auxio.playback.lyrics.LyricsStore
 import org.oxycblt.auxio.playback.queue.QueueViewModel
 import org.oxycblt.auxio.playback.state.RepeatMode
 import org.oxycblt.auxio.playback.ui.StyledSeekBar
@@ -506,8 +506,8 @@ class PlaybackPanelFragment :
     }
 
     /**
-     * Finds the assigned LRC first, then a matching file in the selected folder.
-     * File access runs off the main thread and stale results are ignored.
+     * Finds the assigned LRC first, then a matching file in the selected folder. File access runs
+     * off the main thread and stale results are ignored.
      */
     private fun autoLoadLyrics(song: Song) {
         val context = requireContext()
@@ -597,7 +597,9 @@ class PlaybackPanelFragment :
         )
         val songUri = lyricsSongUri
         if (songUri != null && lyricsStore.assigned(songUri) != null) {
-            actions.add(LyricsAction("Quitar el .LRC asociado a esta canción") { clearAssignedLyrics() })
+            actions.add(
+                LyricsAction("Quitar el .LRC asociado a esta canción") { clearAssignedLyrics() }
+            )
         }
         if (lyricsStore.folder != null) {
             actions.add(
