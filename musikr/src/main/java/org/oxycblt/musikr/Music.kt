@@ -306,6 +306,8 @@ interface Song : Music {
     val addedMs: Long
     /** Useful information to quickly obtain the album cover. */
     val cover: Cover?
+    /** Embedded, unsynchronized lyrics from the audio file metadata. */
+    val lyrics: String? get() = null
     /**
      * The parent [Album]. If the metadata did not specify an album, it's parent directory is used
      * instead.

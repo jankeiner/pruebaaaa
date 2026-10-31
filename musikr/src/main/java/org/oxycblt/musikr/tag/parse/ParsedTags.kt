@@ -42,4 +42,5 @@ data class ParsedTags(
     val albumArtistNames: List<String> = listOf(),
     val albumArtistSortNames: List<String> = listOf(),
     val genreNames: List<String> = listOf(),
+    val lyrics: String? = null,
 )
