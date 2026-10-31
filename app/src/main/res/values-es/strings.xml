@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="jans_brand_name">Jan’s</string>
+    <string name="jans_tagline">Vibra con la música</string>
     <string name="info_app_desc">Un reproductor de música simple y racional para Android.</string>
     <string name="lng_widget">Ver y controlar la reproducción musical</string>
     <string name="lbl_retry">Reintentar</string>
