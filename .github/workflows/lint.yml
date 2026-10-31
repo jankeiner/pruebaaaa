@@ -1,4 +1,4 @@
-name: Jan's Quality Checks
+name: Jan's Quality Checks and Build
 
 on:
   push:
@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: quality-${{ github.ref }}
@@ -22,9 +22,9 @@ concurrency:
 
 jobs:
   checks:
-    name: Formatting and Musikr tests
+    name: Format, test and build Jan's
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     steps:
       - name: Check out source and pinned submodules
@@ -32,6 +32,7 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Ninja
         run: sudo apt-get update && sudo apt-get install -y ninja-build
@@ -63,8 +64,33 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 
-      - name: Check Kotlin and C++ formatting
+      - name: Apply repository formatting
+        run: ./gradlew --no-daemon spotlessApply
+
+      - name: Commit formatting changes on branch pushes
+        if: github.event_name == 'push' && github.ref == 'refs/heads/jans-development'
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "Apply Kotlin and C++ formatting"
+            git push
+          fi
+
+      - name: Verify formatting
         run: ./gradlew --no-daemon spotlessCheck
 
       - name: Run Musikr unit tests
         run: ./gradlew --no-daemon :musikr:test
+
+      - name: Build debug APK
+        run: ./gradlew --no-daemon --stacktrace :app:assembleDebug
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Jans-validated-${{ github.run_number }}
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
