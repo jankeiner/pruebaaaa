@@ -21,6 +21,13 @@ package org.oxycblt.auxio.playback
 import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.app.AlertDialog
+import android.net.Uri
+import android.text.SpannableString
+import android.text.style.ForegroundColorSpan
+import android.view.Gravity
+import android.widget.ScrollView
+import android.widget.TextView
 import android.media.audiofx.AudioEffect
 import android.os.Build
 import android.os.Bundle
@@ -31,6 +38,10 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.updatePadding
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.dynamicanimation.animation.SpringForce
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
@@ -43,6 +54,8 @@ import org.oxycblt.auxio.list.ListViewModel
 import org.oxycblt.auxio.music.resolve
 import org.oxycblt.auxio.music.resolveNames
 import org.oxycblt.auxio.playback.queue.QueueViewModel
+import org.oxycblt.auxio.playback.lyrics.LrcParser
+import org.oxycblt.auxio.playback.lyrics.LyricLine
 import org.oxycblt.auxio.playback.state.RepeatMode
 import org.oxycblt.auxio.playback.ui.StyledSeekBar
 import org.oxycblt.auxio.playback.ui.swiper.CarouselTransformer
@@ -72,12 +85,18 @@ class PlaybackPanelFragment :
     ViewBindingFragment<FragmentPlaybackPanelBinding>(),
     Toolbar.OnMenuItemClickListener,
     StyledSeekBar.Listener {
-    private val coverPagerAdapter = CoverPagerAdapter()
+    private val coverPagerAdapter = CoverPagerAdapter(::openLyricsPicker)
     private val playbackModel: PlaybackViewModel by activityViewModels()
     private val detailModel: DetailViewModel by activityViewModels()
     private val listModel: ListViewModel by activityViewModels()
     private val queueModel: QueueViewModel by viewModels()
     private var equalizerLauncher: ActivityResultLauncher<Intent>? = null
+    private var lyricsLauncher: ActivityResultLauncher<Array<String>>? = null
+    private var lyricsDialog: AlertDialog? = null
+    private var lyricsText: TextView? = null
+    private var lyricsScroll: ScrollView? = null
+    private var lyricLines: List<LyricLine> = emptyList()
+    private var activeLyricIndex = -1
     private var userAwarePagerCallback: UserAwarePagerCallback? = null
 
     override fun onCreateBinding(inflater: LayoutInflater) =
@@ -95,6 +114,10 @@ class PlaybackPanelFragment :
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
                 // Nothing to do
             }
+
+        lyricsLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri != null) loadLyrics(uri)
+        }
 
         // --- UI SETUP ---
         binding.root.setOnApplyWindowInsetsListener { view, insets ->
@@ -217,6 +240,13 @@ class PlaybackPanelFragment :
 
     override fun onDestroyBinding(binding: FragmentPlaybackPanelBinding) {
         equalizerLauncher = null
+        lyricsLauncher = null
+        lyricsDialog?.dismiss()
+        lyricsDialog = null
+        lyricsText = null
+        lyricsScroll = null
+        lyricLines = emptyList()
+        activeLyricIndex = -1
         binding.playbackRepeat.clearPendingIcon()
         binding.playbackSong.isSelected = false
         binding.playbackArtist.isSelected = false
@@ -278,6 +308,88 @@ class PlaybackPanelFragment :
 
     private fun updatePosition(positionDs: Long) {
         requireBinding().playbackSeekBar?.positionDs = positionDs
+        updateLyrics(positionDs * 100L)
+    }
+
+    private fun openLyricsPicker() {
+        lyricsLauncher?.launch(arrayOf("text/*", "application/octet-stream"))
+    }
+
+    private fun loadLyrics(uri: Uri) {
+        val resolver = requireContext().contentResolver
+        viewLifecycleOwner.lifecycleScope.launch {
+            val parsed = withContext(Dispatchers.IO) {
+                runCatching {
+                    resolver.openInputStream(uri)?.bufferedReader()?.use {
+                        LrcParser.parse(it.readText())
+                    }.orEmpty()
+                }.getOrElse { emptyList() }
+            }
+            if (parsed.isEmpty()) {
+                requireContext().showToast("No se encontró una letra LRC válida.")
+                return@launch
+            }
+            lyricLines = parsed
+            activeLyricIndex = -1
+            showLyrics()
+            updateLyrics(playbackModel.positionDs.value * 100L)
+        }
+    }
+
+    private fun showLyrics() {
+        val context = requireContext()
+        val text = TextView(context).apply {
+            textSize = 18f
+            setPadding(24, 24, 24, 24)
+            gravity = Gravity.CENTER_HORIZONTAL
+            setTextColor(android.graphics.Color.WHITE)
+        }
+        val scroll = ScrollView(context).apply { addView(text) }
+        lyricsText = text
+        lyricsScroll = scroll
+        lyricsDialog?.dismiss()
+        lyricsDialog = AlertDialog.Builder(context)
+            .setTitle("Letra sincronizada")
+            .setView(scroll)
+            .setPositiveButton(android.R.string.ok, null)
+            .create()
+            .also { it.show() }
+        renderLyrics(-1)
+    }
+
+    private fun updateLyrics(positionMs: Long) {
+        if (lyricLines.isEmpty() || lyricsText == null) return
+        val index = lyricLines.indexOfLast { it.timeMs <= positionMs }
+        if (index != activeLyricIndex) {
+            activeLyricIndex = index
+            renderLyrics(index)
+        }
+    }
+
+    private fun renderLyrics(activeIndex: Int) {
+        val view = lyricsText ?: return
+        val fullText = lyricLines.joinToString("\\n") { it.text }
+        val start = if (activeIndex >= 0) {
+            lyricLines.take(activeIndex).sumOf { it.text.length + 1 }
+        } else 0
+        val end = if (activeIndex >= 0) start + lyricLines[activeIndex].text.length else start
+        val styled = SpannableString(fullText)
+        if (activeIndex >= 0 && end <= styled.length) {
+            styled.setSpan(
+                ForegroundColorSpan(android.graphics.Color.MAGENTA),
+                start,
+                end,
+                SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+        }
+        view.text = styled
+        if (activeIndex >= 0) {
+            view.post {
+                val layout = view.layout ?: return@post
+                val line = layout.getLineForOffset(start)
+                lyricsScroll?.smoothScrollTo(0, layout.getLineTop(line).coerceAtLeast(0))
+            }
+        }
     }
 
     private fun updateRepeat(repeatMode: RepeatMode) {
