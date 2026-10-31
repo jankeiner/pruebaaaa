@@ -27,12 +27,18 @@ jobs:
     timeout-minutes: 60
 
     steps:
-      - name: Check out source and pinned submodules
+      - name: Check out source
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: false
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Initialize submodules using GitHub mirror for FFmpeg
+        run: |
+          git config --global url."https://github.com/FFmpeg/FFmpeg.git".insteadOf "https://git.ffmpeg.org/ffmpeg.git"
+          git submodule sync --recursive
+          git submodule update --init --recursive
 
       - name: Install Ninja
         run: sudo apt-get update && sudo apt-get install -y ninja-build
