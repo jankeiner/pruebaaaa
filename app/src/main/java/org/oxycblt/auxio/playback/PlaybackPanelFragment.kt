@@ -356,7 +356,7 @@ class PlaybackPanelFragment :
         val root = binding.root as? ConstraintLayout ?: return
 
         binding.playbackPager?.visibility = View.INVISIBLE
-        binding.playbackInfoContainerVisibility(false)
+        binding.playbackInfoContainer.visibility = View.GONE
 
         val panel =
             LinearLayout(context).apply {
@@ -476,7 +476,7 @@ class PlaybackPanelFragment :
                 lyricsText = null
                 lyricsScroll = null
                 currentBinding.playbackPager?.visibility = View.VISIBLE
-                currentBinding.playbackInfoContainerVisibility(true)
+                currentBinding.playbackInfoContainer.visibility = View.VISIBLE
             }
             .start()
     }
