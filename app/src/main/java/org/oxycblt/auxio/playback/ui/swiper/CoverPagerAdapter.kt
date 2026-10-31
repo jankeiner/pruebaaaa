@@ -28,6 +28,7 @@ import org.oxycblt.musikr.Song
 
 /**
  * A [FlexibleListAdapter] that hosts [CoverViewHolder]s containing a [Song]'s cover.
+ *
  * @author Alexander Capehart (OxygenCobalt)
  */
 class CoverPagerAdapter :
