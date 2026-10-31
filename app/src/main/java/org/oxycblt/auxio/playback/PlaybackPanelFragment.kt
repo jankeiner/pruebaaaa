@@ -108,7 +108,8 @@ class PlaybackPanelFragment :
     private var embeddedLyricsText: String? = null
     private var showEmbeddedLyrics = false
     private var lyricsSong: Song? = null
-    // Invalidates older automatic/manual loads when a newer request starts or the view is destroyed.
+    // Invalidates older automatic/manual loads when a newer request starts or the view is
+    // destroyed.
     private var lyricsLoadGeneration = 0L
     private var userAwarePagerCallback: UserAwarePagerCallback? = null
 
