@@ -29,17 +29,17 @@ import android.text.SpannableString
 import android.text.style.ForegroundColorSpan
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.MenuItem
+import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.LinearLayout
-import androidx.constraintlayout.widget.ConstraintLayout
-import android.view.MenuItem
-import android.view.View
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.Toolbar
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.updatePadding
 import androidx.dynamicanimation.animation.SpringForce
 import androidx.fragment.app.activityViewModels
@@ -326,92 +326,120 @@ class PlaybackPanelFragment :
         binding.playbackPager?.visibility = View.INVISIBLE
         binding.playbackInfoContainerVisibility(false)
 
-        val panel = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(24, 12, 24, 12)
-            setBackgroundColor(android.graphics.Color.rgb(12, 9, 22))
-            alpha = 0f
-            translationY = 28f
-        }
-        val header = LinearLayout(context).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        val close = Button(context).apply {
-            text = "‹"
-            textSize = 28f
-            setTextColor(android.graphics.Color.WHITE)
-            setBackgroundColor(android.graphics.Color.TRANSPARENT)
-            contentDescription = "Volver a la portada"
-            setOnClickListener { hideLyricsScreen() }
-        }
-        val title = TextView(context).apply {
-            text = "LETRA"
-            textSize = 13f
-            letterSpacing = 0.18f
-            setTextColor(android.graphics.Color.LTGRAY)
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        val load = Button(context).apply {
-            text = "Cargar LRC"
-            textSize = 12f
-            setTextColor(android.graphics.Color.rgb(205, 170, 255))
-            setBackgroundColor(android.graphics.Color.TRANSPARENT)
-            setOnClickListener { openLyricsPicker() }
-        }
+        val panel =
+            LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(24, 12, 24, 12)
+                setBackgroundColor(android.graphics.Color.rgb(12, 9, 22))
+                alpha = 0f
+                translationY = 28f
+            }
+        val header =
+            LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+            }
+        val close =
+            Button(context).apply {
+                text = "‹"
+                textSize = 28f
+                setTextColor(android.graphics.Color.WHITE)
+                setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                contentDescription = "Volver a la portada"
+                setOnClickListener { hideLyricsScreen() }
+            }
+        val title =
+            TextView(context).apply {
+                text = "LETRA"
+                textSize = 13f
+                letterSpacing = 0.18f
+                setTextColor(android.graphics.Color.LTGRAY)
+                gravity = Gravity.CENTER_VERTICAL
+            }
+        val load =
+            Button(context).apply {
+                text = "Cargar LRC"
+                textSize = 12f
+                setTextColor(android.graphics.Color.rgb(205, 170, 255))
+                setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                setOnClickListener { openLyricsPicker() }
+            }
         header.addView(close, LinearLayout.LayoutParams(52, 52))
         header.addView(title, LinearLayout.LayoutParams(0, 52, 1f))
         header.addView(load, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, 52))
-        panel.addView(header, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-        ))
+        panel.addView(
+            header,
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ),
+        )
 
-        val text = TextView(context).apply {
-            textSize = 25f
-            setLineSpacing(12f, 1.05f)
-            setPadding(8, 32, 8, 48)
-            gravity = Gravity.CENTER_VERTICAL
-            setTextColor(android.graphics.Color.rgb(170, 160, 185))
-        }
-        val scroll = ScrollView(context).apply {
-            isFillViewport = true
-            addView(text, ScrollView.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-            ))
-        }
-        panel.addView(scroll, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f
-        ))
+        val text =
+            TextView(context).apply {
+                textSize = 25f
+                setLineSpacing(12f, 1.05f)
+                setPadding(8, 32, 8, 48)
+                gravity = Gravity.CENTER_VERTICAL
+                setTextColor(android.graphics.Color.rgb(170, 160, 185))
+            }
+        val scroll =
+            ScrollView(context).apply {
+                isFillViewport = true
+                addView(
+                    text,
+                    ScrollView.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ),
+                )
+            }
+        panel.addView(
+            scroll,
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                0,
+                1f,
+            ),
+        )
         lyricsText = text
         lyricsScroll = scroll
         lyricsContainer = panel
 
-        val params = ConstraintLayout.LayoutParams(0, 0).apply {
-            startToStart = ConstraintLayout.LayoutParams.PARENT_ID
-            endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
-            topToBottom = R.id.playback_toolbar
-            bottomToTop = R.id.playback_seek_bar
-        }
+        val params =
+            ConstraintLayout.LayoutParams(0, 0).apply {
+                startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+                endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+                topToBottom = R.id.playback_toolbar
+                bottomToTop = R.id.playback_seek_bar
+            }
         root.addView(panel, params)
         panel.bringToFront()
         panel.animate().alpha(1f).translationY(0f).setDuration(240L).start()
         renderLyrics(activeLyricIndex)
         if (lyricLines.isEmpty()) {
-            text.text = "Todavía no hay letra para esta canción.\\n\\nPuedes cargar un archivo .LRC."
+            text.text =
+                "Todavía no hay letra para esta canción.\\n\\nPuedes cargar un archivo .LRC."
             text.setTextColor(android.graphics.Color.LTGRAY)
         }
     }
 
     private fun hideLyricsScreen() {
         val panel = lyricsContainer ?: return
-        panel.animate().alpha(0f).translationY(24f).setDuration(180L).withEndAction {
-            (panel.parent as? ViewGroup)?.removeView(panel)
-            lyricsContainer = null
-            lyricsText = null
-            lyricsScroll = null
-            requireBinding().playbackPager?.visibility = View.VISIBLE
-            requireBinding().playbackInfoContainerVisibility(true)
-        }.start()
+        panel
+            .animate()
+            .alpha(0f)
+            .translationY(24f)
+            .setDuration(180L)
+            .withEndAction {
+                (panel.parent as? ViewGroup)?.removeView(panel)
+                lyricsContainer = null
+                lyricsText = null
+                lyricsScroll = null
+                requireBinding().playbackPager?.visibility = View.VISIBLE
+                requireBinding().playbackInfoContainerVisibility(true)
+            }
+            .start()
     }
 
     private fun openLyricsPicker() {
@@ -424,16 +452,23 @@ class PlaybackPanelFragment :
             val parsed =
                 withContext(Dispatchers.IO) {
                     runCatching {
-                        resolver.openInputStream(uri)?.bufferedReader()?.use {
-                            LrcParser.parse(it.readText())
-                        }.orEmpty()
-                    }.getOrElse { emptyList() }
+                            resolver
+                                .openInputStream(uri)
+                                ?.bufferedReader()
+                                ?.use {
+                                    LrcParser.parse(it.readText())
+                                }
+                                .orEmpty()
+                        }
+                        .getOrElse { emptyList() }
                 }
             if (parsed.isEmpty()) {
                 android.widget.Toast.makeText(
-                    requireContext(), "No se encontró una letra LRC válida.",
-                    android.widget.Toast.LENGTH_SHORT
-                ).show()
+                        requireContext(),
+                        "No se encontró una letra LRC válida.",
+                        android.widget.Toast.LENGTH_SHORT,
+                    )
+                    .show()
                 return@launch
             }
             lyricLines = parsed
