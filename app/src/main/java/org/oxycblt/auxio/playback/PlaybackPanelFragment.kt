@@ -19,7 +19,6 @@
 package org.oxycblt.auxio.playback
 
 import android.annotation.SuppressLint
-import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.media.audiofx.AudioEffect
@@ -46,6 +45,7 @@ import androidx.dynamicanimation.animation.SpringForce
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import kotlin.math.abs
 import kotlinx.coroutines.Dispatchers
@@ -58,6 +58,7 @@ import org.oxycblt.auxio.list.ListViewModel
 import org.oxycblt.auxio.music.resolve
 import org.oxycblt.auxio.music.resolveNames
 import org.oxycblt.auxio.playback.lyrics.LrcParser
+import org.oxycblt.auxio.playback.lyrics.LyricsStore
 import org.oxycblt.auxio.playback.lyrics.LyricLine
 import org.oxycblt.auxio.playback.queue.QueueViewModel
 import org.oxycblt.auxio.playback.state.RepeatMode
@@ -96,6 +97,8 @@ class PlaybackPanelFragment :
     private val queueModel: QueueViewModel by viewModels()
     private var equalizerLauncher: ActivityResultLauncher<Intent>? = null
     private var lyricsLauncher: ActivityResultLauncher<Array<String>>? = null
+    private var lyricsFolderLauncher: ActivityResultLauncher<Uri?>? = null
+    private val lyricsStore by lazy(LazyThreadSafetyMode.NONE) { LyricsStore(requireContext()) }
     private var lyricsContainer: LinearLayout? = null
     private var lyricsText: TextView? = null
     private var lyricsScroll: ScrollView? = null
@@ -104,6 +107,7 @@ class PlaybackPanelFragment :
     private var lyricsSongUri: Uri? = null
     private var embeddedLyricsText: String? = null
     private var showEmbeddedLyrics = false
+    private var lyricsSong: Song? = null
     private var userAwarePagerCallback: UserAwarePagerCallback? = null
 
     override fun onCreateBinding(inflater: LayoutInflater) =
@@ -125,6 +129,11 @@ class PlaybackPanelFragment :
         lyricsLauncher =
             registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
                 if (uri != null) loadLyrics(uri)
+            }
+
+        lyricsFolderLauncher =
+            registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+                if (uri != null) setLyricsFolder(uri)
             }
 
         // --- UI SETUP ---
@@ -249,6 +258,7 @@ class PlaybackPanelFragment :
     override fun onDestroyBinding(binding: FragmentPlaybackPanelBinding) {
         equalizerLauncher = null
         lyricsLauncher = null
+        lyricsFolderLauncher = null
         lyricsContainer?.let { (it.parent as? ViewGroup)?.removeView(it) }
         lyricsContainer = null
         lyricsText = null
@@ -256,6 +266,11 @@ class PlaybackPanelFragment :
         lyricsContainer = null
         lyricLines = emptyList()
         activeLyricIndex = -1
+        // Reset lyric state so it is restored when the view is recreated.
+        lyricsSongUri = null
+        lyricsSong = null
+        embeddedLyricsText = null
+        showEmbeddedLyrics = false
         binding.playbackRepeat.clearPendingIcon()
         binding.playbackSong.isSelected = false
         binding.playbackArtist.isSelected = false
@@ -308,7 +323,9 @@ class PlaybackPanelFragment :
             activeLyricIndex = -1
             embeddedLyricsText = song.lyrics?.trim()?.takeIf { it.isNotEmpty() }
             showEmbeddedLyrics = false
+            lyricsSong = song
             renderLyricsSource()
+            autoLoadLyrics(song)
         }
         binding.playbackSong.text = song.name.resolve(context)
         binding.playbackArtist.text = song.artists.resolveNames(context)
@@ -463,42 +480,91 @@ class PlaybackPanelFragment :
     }
 
     private fun loadLyrics(uri: Uri) {
-        val resolver = requireContext().contentResolver
+        val songUri = lyricsSongUri
+        val store = lyricsStore
         viewLifecycleOwner.lifecycleScope.launch {
             val parsed =
                 withContext(Dispatchers.IO) {
-                    runCatching {
-                            resolver
-                                .openInputStream(uri)
-                                ?.bufferedReader()
-                                ?.use {
-                                    LrcParser.parse(it.readText())
-                                }
-                                .orEmpty()
-                        }
-                        .getOrElse { emptyList() }
+                    val text = store.read(uri)
+                    if (text == null) emptyList<LyricLine>() else LrcParser.parse(text)
                 }
             if (parsed.isEmpty()) {
-                android.widget.Toast.makeText(
-                        requireContext(),
-                        "No se encontró una letra LRC válida.",
-                        android.widget.Toast.LENGTH_SHORT,
-                    )
-                    .show()
+                toast("No se encontró una letra LRC válida.")
                 return@launch
             }
-            lyricLines = parsed
-            activeLyricIndex = -1
-            showEmbeddedLyrics = false
-            if (lyricsContainer == null) showLyricsScreen()
-            renderLyricsSource()
-            updateLyrics(playbackModel.positionDs.value * 100L)
+            if (lyricsSongUri != songUri) return@launch
+            if (songUri != null) {
+                runCatching {
+                    requireContext()
+                        .contentResolver
+                        .takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                store.assign(songUri, uri)
+            }
+            applyLyrics(parsed, openScreen = true)
         }
     }
 
-    private fun FragmentPlaybackPanelBinding.playbackInfoContainerVisibility(visible: Boolean) {
-        playbackInfoContainer.visibility = if (visible) View.VISIBLE else View.INVISIBLE
-        playbackMore?.visibility = if (visible) View.VISIBLE else View.INVISIBLE
+    /**
+     * Finds the assigned LRC first, then a matching file in the selected folder.
+     * File access runs off the main thread and stale results are ignored.
+     */
+    private fun autoLoadLyrics(song: Song) {
+        val context = requireContext()
+        val songUri = song.uri
+        val store = lyricsStore
+        val title = song.name.resolve(context)
+        val candidates =
+            listOfNotNull(
+                song.path.name?.substringBeforeLast('.'),
+                title,
+                "${song.artists.resolveNames(context)} - $title",
+            )
+        viewLifecycleOwner.lifecycleScope.launch {
+            val text =
+                withContext(Dispatchers.IO) {
+                    store.assigned(songUri)?.let { store.read(it) }
+                        ?: store.findInFolder(candidates)?.let { store.read(it) }
+                }
+            val parsed = if (text == null) emptyList<LyricLine>() else LrcParser.parse(text)
+            if (parsed.isNotEmpty() && lyricsSongUri == songUri) {
+                applyLyrics(parsed, openScreen = false)
+            }
+        }
+    }
+
+    private fun applyLyrics(parsed: List<LyricLine>, openScreen: Boolean) {
+        lyricLines = parsed
+        activeLyricIndex = -1
+        showEmbeddedLyrics = false
+        if (openScreen && lyricsContainer == null) showLyricsScreen()
+        renderLyricsSource()
+        updateLyrics(playbackModel.positionDs.value * 100L)
+    }
+
+    private fun setLyricsFolder(uri: Uri) {
+        runCatching {
+            requireContext()
+                .contentResolver
+                .takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        lyricsStore.folder = uri
+        toast("Carpeta de letras guardada.")
+        lyricsSong?.let { autoLoadLyrics(it) }
+    }
+
+    private fun clearAssignedLyrics() {
+        val songUri = lyricsSongUri ?: return
+        lyricsStore.unassign(songUri)
+        lyricLines = emptyList()
+        activeLyricIndex = -1
+        renderLyricsSource()
+        toast("Letra asociada eliminada.")
+    }
+
+    private fun toast(text: String) {
+        android.widget.Toast.makeText(requireContext(), text, android.widget.Toast.LENGTH_SHORT)
+            .show()
     }
 
     private fun chooseLyricsSource() {
@@ -506,10 +572,10 @@ class PlaybackPanelFragment :
         if (lyricLines.isNotEmpty()) choices.add("Letra sincronizada (.LRC)")
         if (embeddedLyricsText != null) choices.add("Letra incrustada en la canción")
         if (choices.isEmpty()) {
-            requireContext().showToast("No hay letras disponibles.")
+            toast("No hay letras disponibles.")
             return
         }
-        AlertDialog.Builder(requireContext())
+        MaterialAlertDialogBuilder(requireContext())
             .setTitle("Fuente de letras")
             .setItems(choices.toTypedArray()) { _, index ->
                 showEmbeddedLyrics = choices[index].startsWith("Letra incrustada")
@@ -519,10 +585,33 @@ class PlaybackPanelFragment :
             .show()
     }
 
+    private class LyricsAction(val label: String, val action: () -> Unit)
+
     private fun manageLyrics() {
-        AlertDialog.Builder(requireContext())
+        val actions = mutableListOf<LyricsAction>()
+        actions.add(LyricsAction("Cargar archivo .LRC para esta canción") { openLyricsPicker() })
+        actions.add(
+            LyricsAction("Elegir carpeta de letras (búsqueda automática)") {
+                lyricsFolderLauncher?.launch(null)
+            }
+        )
+        val songUri = lyricsSongUri
+        if (songUri != null && lyricsStore.assigned(songUri) != null) {
+            actions.add(LyricsAction("Quitar el .LRC asociado a esta canción") { clearAssignedLyrics() })
+        }
+        if (lyricsStore.folder != null) {
+            actions.add(
+                LyricsAction("Dejar de usar la carpeta de letras") {
+                    lyricsStore.folder = null
+                    toast("Carpeta de letras desactivada.")
+                }
+            )
+        }
+        MaterialAlertDialogBuilder(requireContext())
             .setTitle("Gestionar letras")
-            .setItems(arrayOf("Cargar archivo .LRC")) { _, _ -> openLyricsPicker() }
+            .setItems(actions.map { it.label }.toTypedArray()) { _, index ->
+                actions[index].action()
+            }
             .show()
     }
 
@@ -537,7 +626,7 @@ class PlaybackPanelFragment :
             lyricLines.isNotEmpty() -> renderLyrics(activeLyricIndex)
             else -> {
                 view.text =
-                    "Todavía no hay letra para esta canción.\n\nPuedes cargar un archivo .LRC."
+                    "Todavía no hay letra para esta canción.\n\nToca ✎ para cargar un archivo .LRC o elegir una carpeta de letras."
                 view.setTextColor(android.graphics.Color.LTGRAY)
             }
         }
