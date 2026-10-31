@@ -34,7 +34,8 @@ import org.oxycblt.musikr.Song
 class CoverPagerAdapter(private val onCoverClick: () -> Unit) :
     FlexibleListAdapter<Song, CoverViewHolder>(CoverViewHolder.DIFF_CALLBACK) {
 
-    override fun onCreateViewHolder(parent: ViewGroup, pos: Int) = CoverViewHolder.from(parent, onCoverClick)
+    override fun onCreateViewHolder(parent: ViewGroup, pos: Int) =
+        CoverViewHolder.from(parent, onCoverClick)
 
     override fun onBindViewHolder(viewHolder: CoverViewHolder, pos: Int) {
         viewHolder.bind(currentList[pos])
@@ -46,7 +47,8 @@ class CoverPagerAdapter(private val onCoverClick: () -> Unit) :
  *
  * @author Alexander Capehart (OxygenCobalt)
  */
-class CoverViewHolder private constructor(private val binding: ItemCoverBinding, private val onCoverClick: () -> Unit) :
+class CoverViewHolder
+private constructor(private val binding: ItemCoverBinding, private val onCoverClick: () -> Unit) :
     RecyclerView.ViewHolder(binding.root) {
     /**
      * Bind new data to this instance.
@@ -66,7 +68,10 @@ class CoverViewHolder private constructor(private val binding: ItemCoverBinding,
          * @return A new instance.
          */
         fun from(parent: ViewGroup, onCoverClick: () -> Unit) =
-            CoverViewHolder(ItemCoverBinding.inflate(parent.context.inflater, parent, false), onCoverClick)
+            CoverViewHolder(
+                ItemCoverBinding.inflate(parent.context.inflater, parent, false),
+                onCoverClick,
+            )
 
         /** A comparator that can be used with DiffUtil. */
         val DIFF_CALLBACK =

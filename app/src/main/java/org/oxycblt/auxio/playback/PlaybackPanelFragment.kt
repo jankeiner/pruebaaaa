@@ -19,43 +19,43 @@
 package org.oxycblt.auxio.playback
 
 import android.annotation.SuppressLint
+import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.app.AlertDialog
+import android.media.audiofx.AudioEffect
 import android.net.Uri
+import android.os.Build
+import android.os.Bundle
 import android.text.SpannableString
 import android.text.style.ForegroundColorSpan
 import android.view.Gravity
-import android.widget.ScrollView
-import android.widget.TextView
-import android.media.audiofx.AudioEffect
-import android.os.Build
-import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
+import android.widget.ScrollView
+import android.widget.TextView
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.updatePadding
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import androidx.dynamicanimation.animation.SpringForce
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import kotlin.math.abs
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.oxycblt.auxio.R
 import org.oxycblt.auxio.databinding.FragmentPlaybackPanelBinding
 import org.oxycblt.auxio.detail.DetailViewModel
 import org.oxycblt.auxio.list.ListViewModel
 import org.oxycblt.auxio.music.resolve
 import org.oxycblt.auxio.music.resolveNames
-import org.oxycblt.auxio.playback.queue.QueueViewModel
 import org.oxycblt.auxio.playback.lyrics.LrcParser
 import org.oxycblt.auxio.playback.lyrics.LyricLine
+import org.oxycblt.auxio.playback.queue.QueueViewModel
 import org.oxycblt.auxio.playback.state.RepeatMode
 import org.oxycblt.auxio.playback.ui.StyledSeekBar
 import org.oxycblt.auxio.playback.ui.swiper.CarouselTransformer
@@ -115,9 +115,10 @@ class PlaybackPanelFragment :
                 // Nothing to do
             }
 
-        lyricsLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-            if (uri != null) loadLyrics(uri)
-        }
+        lyricsLauncher =
+            registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+                if (uri != null) loadLyrics(uri)
+            }
 
         // --- UI SETUP ---
         binding.root.setOnApplyWindowInsetsListener { view, insets ->
@@ -318,13 +319,19 @@ class PlaybackPanelFragment :
     private fun loadLyrics(uri: Uri) {
         val resolver = requireContext().contentResolver
         viewLifecycleOwner.lifecycleScope.launch {
-            val parsed = withContext(Dispatchers.IO) {
-                runCatching {
-                    resolver.openInputStream(uri)?.bufferedReader()?.use {
-                        LrcParser.parse(it.readText())
-                    }.orEmpty()
-                }.getOrElse { emptyList() }
-            }
+            val parsed =
+                withContext(Dispatchers.IO) {
+                    runCatching {
+                            resolver
+                                .openInputStream(uri)
+                                ?.bufferedReader()
+                                ?.use {
+                                    LrcParser.parse(it.readText())
+                                }
+                                .orEmpty()
+                        }
+                        .getOrElse { emptyList() }
+                }
             if (parsed.isEmpty()) {
                 requireContext().showToast("No se encontró una letra LRC válida.")
                 return@launch
@@ -338,22 +345,24 @@ class PlaybackPanelFragment :
 
     private fun showLyrics() {
         val context = requireContext()
-        val text = TextView(context).apply {
-            textSize = 18f
-            setPadding(24, 24, 24, 24)
-            gravity = Gravity.CENTER_HORIZONTAL
-            setTextColor(android.graphics.Color.WHITE)
-        }
+        val text =
+            TextView(context).apply {
+                textSize = 18f
+                setPadding(24, 24, 24, 24)
+                gravity = Gravity.CENTER_HORIZONTAL
+                setTextColor(android.graphics.Color.WHITE)
+            }
         val scroll = ScrollView(context).apply { addView(text) }
         lyricsText = text
         lyricsScroll = scroll
         lyricsDialog?.dismiss()
-        lyricsDialog = AlertDialog.Builder(context)
-            .setTitle("Letra sincronizada")
-            .setView(scroll)
-            .setPositiveButton(android.R.string.ok, null)
-            .create()
-            .also { it.show() }
+        lyricsDialog =
+            AlertDialog.Builder(context)
+                .setTitle("Letra sincronizada")
+                .setView(scroll)
+                .setPositiveButton(android.R.string.ok, null)
+                .create()
+                .also { it.show() }
         renderLyrics(-1)
     }
 
@@ -369,9 +378,10 @@ class PlaybackPanelFragment :
     private fun renderLyrics(activeIndex: Int) {
         val view = lyricsText ?: return
         val fullText = lyricLines.joinToString("\\n") { it.text }
-        val start = if (activeIndex >= 0) {
-            lyricLines.take(activeIndex).sumOf { it.text.length + 1 }
-        } else 0
+        val start =
+            if (activeIndex >= 0) {
+                lyricLines.take(activeIndex).sumOf { it.text.length + 1 }
+            } else 0
         val end = if (activeIndex >= 0) start + lyricLines[activeIndex].text.length else start
         val styled = SpannableString(fullText)
         if (activeIndex >= 0 && end <= styled.length) {
@@ -379,7 +389,7 @@ class PlaybackPanelFragment :
                 ForegroundColorSpan(android.graphics.Color.MAGENTA),
                 start,
                 end,
-                SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE
+                SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE,
             )
         }
         view.text = styled
