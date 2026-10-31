@@ -60,7 +60,7 @@ class UISettingsImpl @Inject constructor(@ApplicationContext context: Context) :
             )
 
     override val useBlackTheme: Boolean
-        get() = sharedPreferences.getBoolean(getString(R.string.set_key_black_theme), false)
+        get() = sharedPreferences.getBoolean(getString(R.string.set_key_black_theme), true)
 
     override var accent: Accent
         get() =
