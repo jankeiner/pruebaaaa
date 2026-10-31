@@ -325,6 +325,9 @@ class PlaybackPanelFragment :
             lyricLines = emptyList()
             activeLyricIndex = -1
             embeddedLyricsText = song.lyrics?.trim()?.takeIf { it.isNotEmpty() }
+            // Embedded metadata can contain synchronized LRC timestamps. Parse it so the
+            // highlighted line follows playback instead of showing raw timestamp tags.
+            lyricLines = embeddedLyricsText?.let(LrcParser::parse).orEmpty()
             showEmbeddedLyrics = false
             lyricsSong = song
             renderLyricsSource()
@@ -568,9 +571,12 @@ class PlaybackPanelFragment :
     private fun clearAssignedLyrics() {
         val songUri = lyricsSongUri ?: return
         lyricsStore.unassign(songUri)
-        lyricLines = emptyList()
+        // Removing an external assignment restores synchronized lyrics embedded in the song.
+        lyricLines = embeddedLyricsText?.let(LrcParser::parse).orEmpty()
         activeLyricIndex = -1
+        showEmbeddedLyrics = false
         renderLyricsSource()
+        updateLyrics(playbackModel.positionDs.value * 100L)
         toast("Letra asociada eliminada.")
     }
 
