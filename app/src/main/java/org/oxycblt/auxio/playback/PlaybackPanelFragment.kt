@@ -19,9 +19,9 @@
 package org.oxycblt.auxio.playback
 
 import android.annotation.SuppressLint
+import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.app.AlertDialog
 import android.media.audiofx.AudioEffect
 import android.net.Uri
 import android.os.Build
@@ -368,20 +368,22 @@ class PlaybackPanelFragment :
                 setTextColor(android.graphics.Color.LTGRAY)
                 gravity = Gravity.CENTER_VERTICAL
             }
-        val source = Button(context).apply {
-            text = "⌄"
-            contentDescription = "Elegir fuente de letras"
-            setTextColor(android.graphics.Color.rgb(205, 170, 255))
-            setBackgroundColor(android.graphics.Color.TRANSPARENT)
-            setOnClickListener { chooseLyricsSource() }
-        }
-        val edit = Button(context).apply {
-            text = "✎"
-            contentDescription = "Gestionar letras"
-            setTextColor(android.graphics.Color.rgb(205, 170, 255))
-            setBackgroundColor(android.graphics.Color.TRANSPARENT)
-            setOnClickListener { manageLyrics() }
-        }
+        val source =
+            Button(context).apply {
+                text = "⌄"
+                contentDescription = "Elegir fuente de letras"
+                setTextColor(android.graphics.Color.rgb(205, 170, 255))
+                setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                setOnClickListener { chooseLyricsSource() }
+            }
+        val edit =
+            Button(context).apply {
+                text = "✎"
+                contentDescription = "Gestionar letras"
+                setTextColor(android.graphics.Color.rgb(205, 170, 255))
+                setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                setOnClickListener { manageLyrics() }
+            }
         header.addView(close, LinearLayout.LayoutParams(48, 52))
         header.addView(title, LinearLayout.LayoutParams(0, 52, 1f))
         header.addView(source, LinearLayout.LayoutParams(44, 52))
@@ -507,17 +509,21 @@ class PlaybackPanelFragment :
             requireContext().showToast("No hay letras disponibles.")
             return
         }
-        AlertDialog.Builder(requireContext()).setTitle("Fuente de letras")
+        AlertDialog.Builder(requireContext())
+            .setTitle("Fuente de letras")
             .setItems(choices.toTypedArray()) { _, index ->
                 showEmbeddedLyrics = choices[index].startsWith("Letra incrustada")
                 renderLyricsSource()
                 if (!showEmbeddedLyrics) updateLyrics(playbackModel.positionDs.value * 100L)
-            }.show()
+            }
+            .show()
     }
 
     private fun manageLyrics() {
-        AlertDialog.Builder(requireContext()).setTitle("Gestionar letras")
-            .setItems(arrayOf("Cargar archivo .LRC")) { _, _ -> openLyricsPicker() }.show()
+        AlertDialog.Builder(requireContext())
+            .setTitle("Gestionar letras")
+            .setItems(arrayOf("Cargar archivo .LRC")) { _, _ -> openLyricsPicker() }
+            .show()
     }
 
     private fun renderLyricsSource() {
@@ -530,7 +536,8 @@ class PlaybackPanelFragment :
             }
             lyricLines.isNotEmpty() -> renderLyrics(activeLyricIndex)
             else -> {
-                view.text = "Todavía no hay letra para esta canción.\n\nPuedes cargar un archivo .LRC."
+                view.text =
+                    "Todavía no hay letra para esta canción.\n\nPuedes cargar un archivo .LRC."
                 view.setTextColor(android.graphics.Color.LTGRAY)
             }
         }
