@@ -160,7 +160,7 @@ dependencies {
     // Material
     // TODO: Exactly figure out the conditions that the 1.7.0 ripple bug occurred so you can just
     //  PR a fix.
-    implementation "com.google.android.material:material:1.13.0"
+    implementation "com.google.android.material:material:1.12.0"
 
     // Dependency Injection
     implementation "com.google.dagger:dagger:$hilt_version"
