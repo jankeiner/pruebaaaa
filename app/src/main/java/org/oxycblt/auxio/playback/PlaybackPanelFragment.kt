@@ -100,6 +100,7 @@ class PlaybackPanelFragment :
     private var lyricsScroll: ScrollView? = null
     private var lyricLines: List<LyricLine> = emptyList()
     private var activeLyricIndex = -1
+    private var lyricsSongUri: Uri? = null
     private var userAwarePagerCallback: UserAwarePagerCallback? = null
 
     override fun onCreateBinding(inflater: LayoutInflater) =
@@ -298,6 +299,12 @@ class PlaybackPanelFragment :
         val binding = requireBinding()
         val context = requireContext()
         L.d("Updating song display: $song")
+        if (lyricsSongUri != song.uri) {
+            lyricsSongUri = song.uri
+            lyricLines = emptyList()
+            activeLyricIndex = -1
+            lyricsText?.text = "Todavía no hay letra para esta canción.\n\nPuedes cargar un archivo .LRC."
+        }
         binding.playbackSong.text = song.name.resolve(context)
         binding.playbackArtist.text = song.artists.resolveNames(context)
         binding.playbackAlbum?.text = song.album.name.resolve(context)
@@ -419,7 +426,7 @@ class PlaybackPanelFragment :
         renderLyrics(activeLyricIndex)
         if (lyricLines.isEmpty()) {
             text.text =
-                "Todavía no hay letra para esta canción.\\n\\nPuedes cargar un archivo .LRC."
+                "Todavía no hay letra para esta canción.\n\nPuedes cargar un archivo .LRC."
             text.setTextColor(android.graphics.Color.LTGRAY)
         }
     }
