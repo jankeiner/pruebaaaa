@@ -244,7 +244,9 @@ internal fun Metadata.albumArtistSortNames() =
 // Lyrics. ID3v2 USLT is used only if exposed by the native extractor.
 internal fun Metadata.lyrics() =
     (xiph["LYRICS"] ?: xiph["UNSYNCEDLYRICS"] ?: mp4["©lyr"] ?: id3v2["USLT"])
-        ?.firstOrNull()?.trim()?.takeIf { it.isNotEmpty() }
+        ?.firstOrNull()
+        ?.trim()
+        ?.takeIf { it.isNotEmpty() }
 
 // Genre
 internal fun Metadata.genreNames() = xiph["GENRE"] ?: mp4["©gen"] ?: mp4["gnre"] ?: id3v2["TCON"]
