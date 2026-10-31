@@ -460,7 +460,7 @@ class PlaybackPanelFragment :
 
     private fun renderLyrics(activeIndex: Int) {
         val view = lyricsText ?: return
-        val fullText = lyricLines.joinToString("\\n") { it.text }
+        val fullText = lyricLines.joinToString("\n") { it.text }
         val start =
             if (activeIndex >= 0) {
                 lyricLines.take(activeIndex).sumOf { it.text.length + 1 }
