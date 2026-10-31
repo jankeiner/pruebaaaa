@@ -108,6 +108,8 @@ class PlaybackPanelFragment :
     private var embeddedLyricsText: String? = null
     private var showEmbeddedLyrics = false
     private var lyricsSong: Song? = null
+    // Invalidates older automatic/manual loads when a newer request starts or the view is destroyed.
+    private var lyricsLoadGeneration = 0L
     private var userAwarePagerCallback: UserAwarePagerCallback? = null
 
     override fun onCreateBinding(inflater: LayoutInflater) =
@@ -260,10 +262,10 @@ class PlaybackPanelFragment :
         lyricsLauncher = null
         lyricsFolderLauncher = null
         lyricsContainer?.let { (it.parent as? ViewGroup)?.removeView(it) }
+        lyricsLoadGeneration++
         lyricsContainer = null
         lyricsText = null
         lyricsScroll = null
-        lyricsContainer = null
         lyricLines = emptyList()
         activeLyricIndex = -1
         // Reset lyric state so it is restored when the view is recreated.
@@ -465,12 +467,15 @@ class PlaybackPanelFragment :
             .translationY(24f)
             .setDuration(180L)
             .withEndAction {
+                // The fragment view may be destroyed while this exit animation is running.
+                if (lyricsContainer !== panel) return@withEndAction
+                val currentBinding = binding ?: return@withEndAction
                 (panel.parent as? ViewGroup)?.removeView(panel)
                 lyricsContainer = null
                 lyricsText = null
                 lyricsScroll = null
-                requireBinding().playbackPager?.visibility = View.VISIBLE
-                requireBinding().playbackInfoContainerVisibility(true)
+                currentBinding.playbackPager?.visibility = View.VISIBLE
+                currentBinding.playbackInfoContainerVisibility(true)
             }
             .start()
     }
@@ -481,6 +486,7 @@ class PlaybackPanelFragment :
 
     private fun loadLyrics(uri: Uri) {
         val songUri = lyricsSongUri
+        val loadGeneration = ++lyricsLoadGeneration
         val store = lyricsStore
         viewLifecycleOwner.lifecycleScope.launch {
             val parsed =
@@ -488,11 +494,11 @@ class PlaybackPanelFragment :
                     val text = store.read(uri)
                     if (text == null) emptyList<LyricLine>() else LrcParser.parse(text)
                 }
+            if (lyricsSongUri != songUri || lyricsLoadGeneration != loadGeneration) return@launch
             if (parsed.isEmpty()) {
                 toast("No se encontró una letra LRC válida.")
                 return@launch
             }
-            if (lyricsSongUri != songUri) return@launch
             if (songUri != null) {
                 runCatching {
                     requireContext()
@@ -512,6 +518,7 @@ class PlaybackPanelFragment :
     private fun autoLoadLyrics(song: Song) {
         val context = requireContext()
         val songUri = song.uri
+        val loadGeneration = ++lyricsLoadGeneration
         val store = lyricsStore
         val title = song.name.resolve(context)
         val candidates =
@@ -527,7 +534,11 @@ class PlaybackPanelFragment :
                         ?: store.findInFolder(candidates)?.let { store.read(it) }
                 }
             val parsed = if (text == null) emptyList<LyricLine>() else LrcParser.parse(text)
-            if (parsed.isNotEmpty() && lyricsSongUri == songUri) {
+            if (
+                parsed.isNotEmpty() &&
+                    lyricsSongUri == songUri &&
+                    lyricsLoadGeneration == loadGeneration
+            ) {
                 applyLyrics(parsed, openScreen = false)
             }
         }
