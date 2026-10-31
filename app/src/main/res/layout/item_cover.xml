@@ -23,15 +23,5 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"/>
 
-        <org.oxycblt.auxio.playback.ui.stepper.StepperOverlay
-            android:id="@+id/cover_fast_seek_overlay"
-            style="@style/Widget.Auxio.Image.Full"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintDimensionRatio="1"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </org.oxycblt.auxio.playback.ui.PlaybackMaskableFrameLayout>
