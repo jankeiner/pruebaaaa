@@ -46,10 +46,10 @@
                     android:paddingBottom="@dimen/spacing_tiny">
 
                     <ImageView
-                        android:id="@+id/about_auxio_icon"
+                        android:id="@+id/about_app_icon"
                         style="@style/Widget.Auxio.Image.Small"
                         android:layout_marginTop="@dimen/spacing_medium"
-                        android:contentDescription="@string/desc_auxio_icon"
+                        android:contentDescription="@string/jans_brand_name"
                         android:src="@mipmap/ic_launcher"
                         app:layout_constraintEnd_toStartOf="@+id/about_app_name"
                         app:layout_constraintHorizontal_chainStyle="packed"
