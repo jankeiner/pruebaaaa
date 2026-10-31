@@ -154,14 +154,7 @@ class Accent private constructor(val index: Int) {
         }
 
         /** The default accent. */
-        val DEFAULT =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                // Use dynamic coloring on devices that support it.
-                accentThemes.lastIndex
-            } else {
-                // Use blue everywhere else.
-                5
-            }
+        val DEFAULT = 2 // Jan's uses a fixed purple accent on every Android version.
 
         /** The amount of valid accents. */
         val MAX =
