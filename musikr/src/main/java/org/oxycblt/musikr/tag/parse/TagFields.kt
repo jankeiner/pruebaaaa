@@ -36,6 +36,7 @@ internal fun Metadata.musicBrainzId() =
             ?: mp4["----:COM.APPLE.ITUNES:MUSICBRAINZ RELEASE TRACK ID"]
             ?: mp4["----:COM.APPLE.ITUNES:MUSICBRAINZ_RELEASETRACKID"]
             ?: id3v2["TXXX:MUSICBRAINZ RELEASE TRACK ID"]
+            ?: id3v2["TXXX:MUSICBRAINZ_RELEASE_TRACK_ID"]
             ?: id3v2["TXXX:MUSICBRAINZ_RELEASETRACKID"])
         ?.first()
 
@@ -95,6 +96,7 @@ internal fun Metadata.albumMusicBrainzId() =
             ?: mp4["----:COM.APPLE.ITUNES:MUSICBRAINZ ALBUM ID"]
             ?: mp4["----:COM.APPLE.ITUNES:MUSICBRAINZ_ALBUMID"]
             ?: id3v2["TXXX:MUSICBRAINZ ALBUM ID"]
+            ?: id3v2["TXXX:MUSICBRAINZ_ALBUM_ID"]
             ?: id3v2["TXXX:MUSICBRAINZ_ALBUMID"])
         ?.first()
 
@@ -121,6 +123,7 @@ internal fun Metadata.artistMusicBrainzIds() =
         ?: mp4["----:COM.APPLE.ITUNES:MUSICBRAINZ ARTIST ID"]
         ?: mp4["----:COM.APPLE.ITUNES:MUSICBRAINZ_ARTISTID"]
         ?: id3v2["TXXX:MUSICBRAINZ ARTIST ID"]
+        ?: id3v2["TXXX:MUSICBRAINZ_ARTIST_ID"]
         ?: id3v2["TXXX:MUSICBRAINZ_ARTISTID"])
 
 internal fun Metadata.artistNames() =
@@ -158,6 +161,7 @@ internal fun Metadata.composerMusicBrainzIds() =
         ?: mp4["----:COM.APPLE.ITUNES:MUSICBRAINZ COMPOSER ID"]
         ?: mp4["----:COM.APPLE.ITUNES:MUSICBRAINZ_COMPOSERID"]
         ?: id3v2["TXXX:MUSICBRAINZ COMPOSER ID"]
+        ?: id3v2["TXXX:MUSICBRAINZ_COMPOSER_ID"]
         ?: id3v2["TXXX:MUSICBRAINZ_COMPOSERID"])
 
 internal fun Metadata.composerNames() =
@@ -195,6 +199,7 @@ internal fun Metadata.albumArtistMusicBrainzIds() =
         ?: mp4["----:COM.APPLE.ITUNES:MUSICBRAINZ ALBUM ARTIST ID"]
         ?: mp4["----:COM.APPLE.ITUNES:MUSICBRAINZ_ALBUMARTISTID"]
         ?: id3v2["TXXX:MUSICBRAINZ ALBUM ARTIST ID"]
+        ?: id3v2["TXXX:MUSICBRAINZ_ALBUM_ARTIST_ID"]
         ?: id3v2["TXXX:MUSICBRAINZ_ALBUMARTISTID"])
 
 internal fun Metadata.albumArtistNames() =
