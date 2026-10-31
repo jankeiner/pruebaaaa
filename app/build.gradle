@@ -151,8 +151,9 @@ dependencies {
     // --- THIRD PARTY ---
 
     // Exoplayer (Vendored)
-    implementation "androidx.media3:media3-exoplayer:1.11.0"
-    implementation "androidx.media3:media3-decoder-ffmpeg:1.11.0"
+    // Keep all Media3 artifacts on the same stable release.
+    implementation "androidx.media3:media3-exoplayer:1.11.1"
+    implementation "androidx.media3:media3-decoder-ffmpeg:1.11.1"
 
     // Image loading
     implementation 'io.coil-kt.coil3:coil-core:3.6.0'
