@@ -333,7 +333,7 @@ class PlaybackPanelFragment :
                         .getOrElse { emptyList() }
                 }
             if (parsed.isEmpty()) {
-                requireContext().showToast("No se encontró una letra LRC válida.")
+                android.widget.Toast.makeText(requireContext(), "No se encontró una letra LRC válida.", android.widget.Toast.LENGTH_SHORT).show()
                 return@launch
             }
             lyricLines = parsed
