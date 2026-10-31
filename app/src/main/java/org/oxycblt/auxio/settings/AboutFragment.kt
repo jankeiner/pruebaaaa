@@ -18,12 +18,9 @@
  
 package org.oxycblt.auxio.settings
 
-import android.content.Context
-import android.content.Intent
 import android.os.Bundle
 import android.text.format.Formatter
 import android.view.LayoutInflater
-import androidx.core.net.toUri
 import androidx.core.view.updatePadding
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
@@ -37,13 +34,12 @@ import org.oxycblt.auxio.playback.formatDurationMs
 import org.oxycblt.auxio.ui.ViewBindingFragment
 import org.oxycblt.auxio.util.collectImmediately
 import org.oxycblt.auxio.util.openInBrowser
-import org.oxycblt.auxio.util.startIntent
 import org.oxycblt.auxio.util.systemBarInsetsCompat
 
 /**
  * A [ViewBindingFragment] that displays information about the app and the current music library.
  *
- * @author Alexander Capehart (OxygenCobalt)
+ * Maintainer: Jan
  */
 @AndroidEntryPoint
 class AboutFragment : ViewBindingFragment<FragmentAboutBinding>() {
@@ -67,13 +63,10 @@ class AboutFragment : ViewBindingFragment<FragmentAboutBinding>() {
             insets
         }
         binding.aboutVersion.text = BuildConfig.VERSION_NAME
-        binding.aboutCode.setOnClickListener { requireContext().openInBrowser(LINK_SOURCE) }
+        binding.aboutCode.setOnClickListener { requireContext().openInBrowser(LINK_CREATOR_REPOSITORY) }
         binding.aboutProfile.setOnClickListener { requireContext().openInBrowser(LINK_CREATOR_REPOSITORY) }
         binding.aboutFeedbackGithub.setOnClickListener {
             requireContext().openInBrowser(LINK_NEW_ISSUE)
-        }
-        binding.aboutFeedbackEmail.setOnClickListener {
-            requireContext().sendEmail("feedback@auxio.app")
         }
 
 
@@ -102,11 +95,6 @@ class AboutFragment : ViewBindingFragment<FragmentAboutBinding>() {
                 R.string.fmt_lib_total_size,
                 Formatter.formatFileSize(context, statistics?.totalSizeBytes ?: 0L),
             )
-    }
-
-    private fun Context.sendEmail(recipient: String) {
-        val intent = Intent(Intent.ACTION_SENDTO).apply { data = "mailto:$recipient".toUri() }
-        startIntent(intent)
     }
 
     private companion object {
