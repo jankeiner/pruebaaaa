@@ -662,7 +662,7 @@ class PlaybackPanelFragment :
         val index = selectedLines.indexOfLast { it.timeMs <= positionMs }
         if (index != activeLyricIndex) {
             activeLyricIndex = index
-            renderLyrics(index)
+            renderLyrics(index, selectedLines)
         }
     }
 
