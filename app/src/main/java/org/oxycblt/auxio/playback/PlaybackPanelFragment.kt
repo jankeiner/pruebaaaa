@@ -303,7 +303,8 @@ class PlaybackPanelFragment :
             lyricsSongUri = song.uri
             lyricLines = emptyList()
             activeLyricIndex = -1
-            lyricsText?.text = "Todavía no hay letra para esta canción.\n\nPuedes cargar un archivo .LRC."
+            lyricsText?.text =
+                "Todavía no hay letra para esta canción.\n\nPuedes cargar un archivo .LRC."
         }
         binding.playbackSong.text = song.name.resolve(context)
         binding.playbackArtist.text = song.artists.resolveNames(context)
@@ -425,8 +426,7 @@ class PlaybackPanelFragment :
         panel.animate().alpha(1f).translationY(0f).setDuration(240L).start()
         renderLyrics(activeLyricIndex)
         if (lyricLines.isEmpty()) {
-            text.text =
-                "Todavía no hay letra para esta canción.\n\nPuedes cargar un archivo .LRC."
+            text.text = "Todavía no hay letra para esta canción.\n\nPuedes cargar un archivo .LRC."
             text.setTextColor(android.graphics.Color.LTGRAY)
         }
     }
