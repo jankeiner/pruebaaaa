@@ -103,6 +103,7 @@ class PlaybackPanelFragment :
     private var lyricsText: TextView? = null
     private var lyricsScroll: ScrollView? = null
     private var lyricLines: List<LyricLine> = emptyList()
+    private var embeddedLyricLines: List<LyricLine> = emptyList()
     private var activeLyricIndex = -1
     private var lyricsSongUri: Uri? = null
     private var embeddedLyricsText: String? = null
@@ -268,6 +269,7 @@ class PlaybackPanelFragment :
         lyricsText = null
         lyricsScroll = null
         lyricLines = emptyList()
+        embeddedLyricLines = emptyList()
         activeLyricIndex = -1
         // Reset lyric state so it is restored when the view is recreated.
         lyricsSongUri = null
@@ -325,9 +327,10 @@ class PlaybackPanelFragment :
             lyricLines = emptyList()
             activeLyricIndex = -1
             embeddedLyricsText = song.lyrics?.trim()?.takeIf { it.isNotEmpty() }
-            // Embedded metadata can contain synchronized LRC timestamps. Parse it so the
-            // highlighted line follows playback instead of showing raw timestamp tags.
-            lyricLines = embeddedLyricsText?.let(LrcParser::parse).orEmpty()
+            // Embedded metadata can contain synchronized LRC timestamps. Keep these lines
+            // separate from an external LRC so switching sources never loses either version.
+            embeddedLyricLines = embeddedLyricsText?.let(LrcParser::parse).orEmpty()
+            lyricLines = embeddedLyricLines
             showEmbeddedLyrics = false
             lyricsSong = song
             renderLyricsSource()
@@ -572,7 +575,7 @@ class PlaybackPanelFragment :
         val songUri = lyricsSongUri ?: return
         lyricsStore.unassign(songUri)
         // Removing an external assignment restores synchronized lyrics embedded in the song.
-        lyricLines = embeddedLyricsText?.let(LrcParser::parse).orEmpty()
+        lyricLines = embeddedLyricLines
         activeLyricIndex = -1
         showEmbeddedLyrics = false
         renderLyricsSource()
@@ -597,8 +600,9 @@ class PlaybackPanelFragment :
             .setTitle("Fuente de letras")
             .setItems(choices.toTypedArray()) { _, index ->
                 showEmbeddedLyrics = choices[index].startsWith("Letra incrustada")
+                activeLyricIndex = -1
                 renderLyricsSource()
-                if (!showEmbeddedLyrics) updateLyrics(playbackModel.positionDs.value * 100L)
+                updateLyrics(playbackModel.positionDs.value * 100L)
             }
             .show()
     }
@@ -637,13 +641,13 @@ class PlaybackPanelFragment :
 
     private fun renderLyricsSource() {
         val view = lyricsText ?: return
+        val selectedLines = if (showEmbeddedLyrics) embeddedLyricLines else lyricLines
         when {
-            !showEmbeddedLyrics && lyricLines.isNotEmpty() -> renderLyrics(activeLyricIndex)
+            selectedLines.isNotEmpty() -> renderLyrics(activeLyricIndex, selectedLines)
             embeddedLyricsText != null -> {
                 view.text = embeddedLyricsText
                 view.setTextColor(android.graphics.Color.rgb(220, 212, 235))
             }
-            lyricLines.isNotEmpty() -> renderLyrics(activeLyricIndex)
             else -> {
                 view.text =
                     "Todavía no hay letra para esta canción.\n\nToca ✎ para cargar un archivo .LRC o elegir una carpeta de letras."
@@ -653,22 +657,23 @@ class PlaybackPanelFragment :
     }
 
     private fun updateLyrics(positionMs: Long) {
-        if (showEmbeddedLyrics || lyricLines.isEmpty() || lyricsText == null) return
-        val index = lyricLines.indexOfLast { it.timeMs <= positionMs }
+        val selectedLines = if (showEmbeddedLyrics) embeddedLyricLines else lyricLines
+        if (selectedLines.isEmpty() || lyricsText == null) return
+        val index = selectedLines.indexOfLast { it.timeMs <= positionMs }
         if (index != activeLyricIndex) {
             activeLyricIndex = index
             renderLyrics(index)
         }
     }
 
-    private fun renderLyrics(activeIndex: Int) {
+    private fun renderLyrics(activeIndex: Int, lines: List<LyricLine> = lyricLines) {
         val view = lyricsText ?: return
-        val fullText = lyricLines.joinToString("\n") { it.text }
+        val fullText = lines.joinToString("\n") { it.text }
         val start =
             if (activeIndex >= 0) {
-                lyricLines.take(activeIndex).sumOf { it.text.length + 1 }
+                lines.take(activeIndex).sumOf { it.text.length + 1 }
             } else 0
-        val end = if (activeIndex >= 0) start + lyricLines[activeIndex].text.length else start
+        val end = if (activeIndex >= 0) start + lines[activeIndex].text.length else start
         val styled = SpannableString(fullText)
         if (activeIndex >= 0 && end <= styled.length) {
             styled.setSpan(
