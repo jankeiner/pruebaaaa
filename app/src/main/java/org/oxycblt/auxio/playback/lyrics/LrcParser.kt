@@ -1,7 +1,21 @@
 /*
- * Copyright (c) 2026 Jan's Project
- * Licensed under the GNU General Public License v3.0 or later.
+ * Copyright (c) 2026 Auxio Project
+ * LrcParser.kt is part of Auxio.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+ 
 package org.oxycblt.auxio.playback.lyrics
 
 /**
@@ -19,7 +33,8 @@ object LrcParser {
     fun parse(contents: String): List<LyricLine> {
         if (contents.isBlank()) return emptyList()
 
-        return contents.lineSequence()
+        return contents
+            .lineSequence()
             .flatMap { line ->
                 val matches = timestamp.findAll(line).toList()
                 if (matches.isEmpty()) {
@@ -31,12 +46,13 @@ object LrcParser {
                         val seconds = match.groupValues[2].toLongOrNull() ?: return@mapNotNull null
                         val fraction = match.groupValues[3]
                         if (seconds >= 60) return@mapNotNull null
-                        val millis = when (fraction.length) {
-                            1 -> fraction.toLong() * 100
-                            2 -> fraction.toLong() * 10
-                            3 -> fraction.toLong()
-                            else -> 0L
-                        }
+                        val millis =
+                            when (fraction.length) {
+                                1 -> fraction.toLong() * 100
+                                2 -> fraction.toLong() * 10
+                                3 -> fraction.toLong()
+                                else -> 0L
+                            }
                         LyricLine((minutes * 60 + seconds) * 1000 + millis, text)
                     }
                 }
