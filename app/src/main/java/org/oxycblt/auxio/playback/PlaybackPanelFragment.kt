@@ -71,9 +71,8 @@ import timber.log.Timber as L
 class PlaybackPanelFragment :
     ViewBindingFragment<FragmentPlaybackPanelBinding>(),
     Toolbar.OnMenuItemClickListener,
-    StyledSeekBar.Listener,
-    {
-    private val coverPagerAdapter = CoverPagerAdapter
+    StyledSeekBar.Listener {
+    private val coverPagerAdapter = CoverPagerAdapter()
     private val playbackModel: PlaybackViewModel by activityViewModels()
     private val detailModel: DetailViewModel by activityViewModels()
     private val listModel: ListViewModel by activityViewModels()
