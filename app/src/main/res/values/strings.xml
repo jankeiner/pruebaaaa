@@ -5,7 +5,7 @@
     <!-- Info namespace | App labels -->
     <eat-comment />
 
-    <string name="info_app_desc">A simple, rational music player for android.</string>
+    <string name="info_app_desc">Tu música, a tu manera.</string>
 
     <!-- Label Namespace | Static Labels -->
     <eat-comment />
@@ -183,8 +183,8 @@
     <!-- As in to report an error -->
     <string name="lbl_report">Report</string>
 
-    <string name="lbl_author">Author</string>
-    <string name="lbl_author_name">Alexander Capehart</string>
+    <string name="lbl_creator">Creador</string>
+    <string name="lbl_creator_name">Yankee Fuentes (Jan)</string>
     <string name="lbl_feedback">Feedback</string>
     <string name="lbl_github">Make an issue on GitHub</string>
     <string name="lbl_email">Send an email</string>
