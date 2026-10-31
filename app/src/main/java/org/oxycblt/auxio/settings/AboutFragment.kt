@@ -68,10 +68,7 @@ class AboutFragment : ViewBindingFragment<FragmentAboutBinding>() {
         }
         binding.aboutVersion.text = BuildConfig.VERSION_NAME
         binding.aboutCode.setOnClickListener { requireContext().openInBrowser(LINK_SOURCE) }
-        binding.aboutWiki.setOnClickListener { requireContext().openInBrowser(LINK_WIKI) }
-        binding.aboutLicenses.setOnClickListener { requireContext().openInBrowser(LINK_LICENSES) }
-        binding.aboutProfile.setOnClickListener { requireContext().openInBrowser(LINK_PROFILE) }
-        binding.aboutDonate.setOnClickListener { requireContext().openInBrowser(LINK_DONATE) }
+        binding.aboutProfile.setOnClickListener { requireContext().openInBrowser(LINK_CREATOR_REPOSITORY) }
         binding.aboutFeedbackGithub.setOnClickListener {
             requireContext().openInBrowser(LINK_NEW_ISSUE)
         }
@@ -79,16 +76,7 @@ class AboutFragment : ViewBindingFragment<FragmentAboutBinding>() {
             requireContext().sendEmail("feedback@auxio.app")
         }
 
-        binding.aboutSupportersBkkellyh.setOnClickListener {
-            requireContext().openInBrowser(LINK_BKKELLYH)
-        }
-        binding.aboutSupportersGruntstumper.setOnClickListener {
-            requireContext().openInBrowser(LINK_GRUNTSTUMPER)
-        }
 
-        binding.aboutSupportersPromo.setOnClickListener {
-            requireContext().openInBrowser(LINK_DONATE)
-        }
 
         // VIEWMODEL SETUP
         collectImmediately(musicModel.statistics, ::updateStatistics)
@@ -122,13 +110,7 @@ class AboutFragment : ViewBindingFragment<FragmentAboutBinding>() {
     }
 
     private companion object {
-        const val LINK_SOURCE = "https://github.com/OxygenCobalt/Auxio"
-        const val LINK_WIKI = "$LINK_SOURCE/wiki"
-        const val LINK_LICENSES = "$LINK_WIKI/Licenses"
-        const val LINK_NEW_ISSUE = "$LINK_SOURCE/issues/new"
-        const val LINK_PROFILE = "https://github.com/OxygenCobalt"
-        const val LINK_BKKELLYH = "https://github.com/bkkellyh"
-        const val LINK_GRUNTSTUMPER = "https://github.com/gruntstumper"
-        const val LINK_DONATE = "https://github.com/sponsors/OxygenCobalt"
+        const val LINK_CREATOR_REPOSITORY = "https://github.com/jankeiner/pruebaaaa"
+        const val LINK_NEW_ISSUE = "$LINK_CREATOR_REPOSITORY/issues/new"
     }
 }
