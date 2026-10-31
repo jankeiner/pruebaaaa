@@ -30,6 +30,10 @@ import android.text.SpannableString
 import android.text.style.ForegroundColorSpan
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.ViewGroup
+import android.widget.Button
+import android.widget.LinearLayout
+import androidx.constraintlayout.widget.ConstraintLayout
 import android.view.MenuItem
 import android.view.View
 import android.widget.ScrollView
@@ -85,14 +89,14 @@ class PlaybackPanelFragment :
     ViewBindingFragment<FragmentPlaybackPanelBinding>(),
     Toolbar.OnMenuItemClickListener,
     StyledSeekBar.Listener {
-    private val coverPagerAdapter = CoverPagerAdapter(::openLyricsPicker)
+    private val coverPagerAdapter = CoverPagerAdapter(::showLyricsScreen)
     private val playbackModel: PlaybackViewModel by activityViewModels()
     private val detailModel: DetailViewModel by activityViewModels()
     private val listModel: ListViewModel by activityViewModels()
     private val queueModel: QueueViewModel by viewModels()
     private var equalizerLauncher: ActivityResultLauncher<Intent>? = null
     private var lyricsLauncher: ActivityResultLauncher<Array<String>>? = null
-    private var lyricsDialog: AlertDialog? = null
+    private var lyricsContainer: LinearLayout? = null
     private var lyricsText: TextView? = null
     private var lyricsScroll: ScrollView? = null
     private var lyricLines: List<LyricLine> = emptyList()
@@ -242,10 +246,11 @@ class PlaybackPanelFragment :
     override fun onDestroyBinding(binding: FragmentPlaybackPanelBinding) {
         equalizerLauncher = null
         lyricsLauncher = null
-        lyricsDialog?.dismiss()
-        lyricsDialog = null
+        lyricsContainer?.let { (it.parent as? ViewGroup)?.removeView(it) }
+        lyricsContainer = null
         lyricsText = null
         lyricsScroll = null
+        lyricsContainer = null
         lyricLines = emptyList()
         activeLyricIndex = -1
         binding.playbackRepeat.clearPendingIcon()
@@ -312,6 +317,109 @@ class PlaybackPanelFragment :
         updateLyrics(positionDs * 100L)
     }
 
+    /** Opens an in-player lyrics surface; playback controls remain below it. */
+    private fun showLyricsScreen() {
+        if (lyricsContainer != null) return
+        val binding = requireBinding()
+        val context = requireContext()
+        val root = binding.root as? ConstraintLayout ?: return
+
+        binding.playbackPager?.visibility = View.INVISIBLE
+        binding.playbackInfoContainerVisibility(false)
+
+        val panel = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(24, 12, 24, 12)
+            setBackgroundColor(android.graphics.Color.rgb(12, 9, 22))
+            alpha = 0f
+            translationY = 28f
+        }
+        val header = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val close = Button(context).apply {
+            text = "‹"
+            textSize = 28f
+            setTextColor(android.graphics.Color.WHITE)
+            setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            contentDescription = "Volver a la portada"
+            setOnClickListener { hideLyricsScreen() }
+        }
+        val title = TextView(context).apply {
+            text = "LETRA"
+            textSize = 13f
+            letterSpacing = 0.18f
+            setTextColor(android.graphics.Color.LTGRAY)
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val load = Button(context).apply {
+            text = "Cargar LRC"
+            textSize = 12f
+            setTextColor(android.graphics.Color.rgb(205, 170, 255))
+            setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            setOnClickListener { openLyricsPicker() }
+        }
+        header.addView(close, LinearLayout.LayoutParams(52, 52))
+        header.addView(title, LinearLayout.LayoutParams(0, 52, 1f))
+        header.addView(load, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, 52))
+        panel.addView(header, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ))
+
+        val text = TextView(context).apply {
+            textSize = 25f
+            setLineSpacing(12f, 1.05f)
+            setPadding(8, 32, 8, 48)
+            gravity = Gravity.CENTER_VERTICAL
+            setTextColor(android.graphics.Color.rgb(170, 160, 185))
+        }
+        val scroll = ScrollView(context).apply {
+            isFillViewport = true
+            addView(text, ScrollView.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ))
+        }
+        panel.addView(scroll, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f
+        ))
+        lyricsText = text
+        lyricsScroll = scroll
+        lyricsContainer = panel
+
+        val params = ConstraintLayout.LayoutParams(0, 0).apply {
+            startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+            endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+            topToBottom = R.id.playback_toolbar
+            bottomToTop = R.id.playback_seek_bar
+        }
+        root.addView(panel, params)
+        panel.bringToFront()
+        panel.animate().alpha(1f).translationY(0f).setDuration(240L).start()
+        renderLyrics(activeLyricIndex)
+        if (lyricLines.isEmpty()) {
+            text.text = "Todavía no hay letra para esta canción.\\n\\nPuedes cargar un archivo .LRC."
+            text.setTextColor(android.graphics.Color.LTGRAY)
+        }
+    }
+
+    private fun hideLyricsScreen() {
+        val panel = lyricsContainer ?: return
+        panel.animate().alpha(0f).translationY(24f).setDuration(180L).withEndAction {
+            (panel.parent as? ViewGroup)?.removeView(panel)
+            lyricsContainer = null
+            lyricsText = null
+            lyricsScroll = null
+            requireBinding().playbackPager?.visibility = View.VISIBLE
+            bindingRestoreInfoVisibility()
+        }.start()
+    }
+
+    private fun bindingRestoreInfoVisibility() {
+        val binding = binding ?: return
+        binding.playbackInfoContainerVisibility(true)
+    }
+
     private fun openLyricsPicker() {
         lyricsLauncher?.launch(arrayOf("text/*", "application/octet-stream"))
     }
@@ -322,53 +430,29 @@ class PlaybackPanelFragment :
             val parsed =
                 withContext(Dispatchers.IO) {
                     runCatching {
-                            resolver
-                                .openInputStream(uri)
-                                ?.bufferedReader()
-                                ?.use {
-                                    LrcParser.parse(it.readText())
-                                }
-                                .orEmpty()
-                        }
-                        .getOrElse { emptyList() }
+                        resolver.openInputStream(uri)?.bufferedReader()?.use {
+                            LrcParser.parse(it.readText())
+                        }.orEmpty()
+                    }.getOrElse { emptyList() }
                 }
             if (parsed.isEmpty()) {
                 android.widget.Toast.makeText(
-                        requireContext(),
-                        "No se encontró una letra LRC válida.",
-                        android.widget.Toast.LENGTH_SHORT,
-                    )
-                    .show()
+                    requireContext(), "No se encontró una letra LRC válida.",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
                 return@launch
             }
             lyricLines = parsed
             activeLyricIndex = -1
-            showLyrics()
+            if (lyricsContainer == null) showLyricsScreen()
+            renderLyrics(-1)
             updateLyrics(playbackModel.positionDs.value * 100L)
         }
     }
 
-    private fun showLyrics() {
-        val context = requireContext()
-        val text =
-            TextView(context).apply {
-                textSize = 18f
-                setPadding(24, 24, 24, 24)
-                gravity = Gravity.CENTER_HORIZONTAL
-                setTextColor(android.graphics.Color.WHITE)
-            }
-        val scroll = ScrollView(context).apply { addView(text) }
-        lyricsText = text
-        lyricsScroll = scroll
-        lyricsDialog?.dismiss()
-        lyricsDialog =
-            AlertDialog.Builder(context)
-                .setTitle("Letra sincronizada")
-                .setView(scroll)
-                .setPositiveButton(android.R.string.ok, null)
-                .create()
-                .also { it.show() }
-        renderLyrics(-1)
+    private fun FragmentPlaybackPanelBinding.playbackInfoContainerVisibility(visible: Boolean) {
+        playbackInfoContainer.visibility = if (visible) View.VISIBLE else View.INVISIBLE
+        playbackMore?.visibility = if (visible) View.VISIBLE else View.INVISIBLE
     }
 
     private fun updateLyrics(positionMs: Long) {
@@ -391,7 +475,7 @@ class PlaybackPanelFragment :
         val styled = SpannableString(fullText)
         if (activeIndex >= 0 && end <= styled.length) {
             styled.setSpan(
-                ForegroundColorSpan(android.graphics.Color.MAGENTA),
+                ForegroundColorSpan(android.graphics.Color.rgb(190, 130, 255)),
                 start,
                 end,
                 SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE,
