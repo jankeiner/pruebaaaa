@@ -63,13 +63,15 @@ class AboutFragment : ViewBindingFragment<FragmentAboutBinding>() {
             insets
         }
         binding.aboutVersion.text = BuildConfig.VERSION_NAME
-        binding.aboutCode.setOnClickListener { requireContext().openInBrowser(LINK_CREATOR_REPOSITORY) }
-        binding.aboutProfile.setOnClickListener { requireContext().openInBrowser(LINK_CREATOR_REPOSITORY) }
+        binding.aboutCode.setOnClickListener {
+            requireContext().openInBrowser(LINK_CREATOR_REPOSITORY)
+        }
+        binding.aboutProfile.setOnClickListener {
+            requireContext().openInBrowser(LINK_CREATOR_REPOSITORY)
+        }
         binding.aboutFeedbackGithub.setOnClickListener {
             requireContext().openInBrowser(LINK_NEW_ISSUE)
         }
-
-
 
         // VIEWMODEL SETUP
         collectImmediately(musicModel.statistics, ::updateStatistics)
