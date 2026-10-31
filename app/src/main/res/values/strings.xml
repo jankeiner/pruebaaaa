@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="jans_brand_name">Jan’s</string>
+    <string name="jans_tagline">Vibra con la música</string>
     <!-- Info namespace | App labels -->
     <eat-comment />
 
