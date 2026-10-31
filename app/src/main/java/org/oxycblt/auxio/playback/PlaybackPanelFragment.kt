@@ -19,7 +19,6 @@
 package org.oxycblt.auxio.playback
 
 import android.annotation.SuppressLint
-import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.media.audiofx.AudioEffect
@@ -411,13 +410,8 @@ class PlaybackPanelFragment :
             lyricsText = null
             lyricsScroll = null
             requireBinding().playbackPager?.visibility = View.VISIBLE
-            bindingRestoreInfoVisibility()
+            requireBinding().playbackInfoContainerVisibility(true)
         }.start()
-    }
-
-    private fun bindingRestoreInfoVisibility() {
-        val binding = binding ?: return
-        binding.playbackInfoContainerVisibility(true)
     }
 
     private fun openLyricsPicker() {
